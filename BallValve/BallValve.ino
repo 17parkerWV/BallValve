@@ -1,5 +1,6 @@
 //This program is made to control a ball valve using the input from a flow rate sensor to maintain correct... waterness?
 //Interrupt pins for the Arduino Nano are on digital pins 2&3
+//I am going to use pin 3 for the PWM (it is 490 Hz)
 
 //These are for counting the spins
 volatile unsigned long spinCount = 0;
@@ -20,7 +21,6 @@ int yn, yn1, yn2, yn3;
 
 void setup() {
 	attachInterrupt(digitalPinToInterrupt(sensorPin), addCount, FALLING);
-	pinMode(gatePin, OUTPUT);
 	pinMode(sensorPin, INPUT_PULLUP);
 	digitalWrite(gatePin, LOW);
 	Serial.begin(115200);
@@ -35,7 +35,6 @@ void loop() {
 
 void updatePower() {
 	cli();
-
 	yn3 = yn2;
 	yn2 = yn1;
 	yn1 = yn;
@@ -47,12 +46,10 @@ void updatePower() {
 	Serial.print(projPoint);
 	Serial.print('\t');
 	Serial.println(projPoint2);
-	if ((yn<20 || projPoint<=19)) {
+	if (spinCount<=18) {
 		digitalWrite(gatePin, HIGH);
-		Serial.println(F("POWER ON"));
-		Serial.println("");
 	}
-	else {
+	else if (spinCount>22) {
 		digitalWrite(gatePin, LOW);
 	}
 	spinCount = 0;
