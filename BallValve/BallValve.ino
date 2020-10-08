@@ -13,7 +13,7 @@ void getCount();
 
 void setup() {
 	for (int pinLoop = 0; pinLoop <= 9; pinLoop++) {
-		pinMode(dataPins[pinLoop], OUTPUT);
+		pinMode(dataPins[pinLoop], INPUT);
 	}
 	pinMode(valveGatePin, OUTPUT);
 	pinMode(counterResetPin, OUTPUT);
@@ -21,24 +21,27 @@ void setup() {
 	counterData = 0b0000000000000000;
 	digitalWrite(valveGatePin, HIGH);
 	Serial.begin(115200);
+	digitalWrite(counterResetPin, LOW);
 }
 
 
 int millisNow;
 void loop() {
 	millisNow = millis();
-	while (millis() - 100 < millisNow) {
+	while (millis() < (millisNow + 2000)) {
 
 	}
-	Serial.println(counterData, BIN);
-	Serial.print('\t');
-	Serial.print(counterData, DEC);
+	getCount();
+	Serial.println(counterData,BIN);
 }
 
 
 void getCount() {
-	counterData << 6;
+	counterData = 0b0000000000000000;
 	for (int pin = 0; pin <= 9; pin++) {
+		if (pin == 1) {
+			counterData << 2;
+		}
 		counterData += digitalRead(dataPins[pin]);
 		counterData << 1;
 	}
