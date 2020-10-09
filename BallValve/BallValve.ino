@@ -28,22 +28,18 @@ void setup() {
 int millisNow;
 void loop() {
 	millisNow = millis();
-	while (millis() < (millisNow + 2000)) {
-
-	}
+	while (millis() < (millisNow + 300)) {
+	}													//Epmty loop for now
 	getCount();
-	Serial.println(counterData,BIN);
+	Serial.println(counterData);
 }
 
 
 void getCount() {
 	counterData = 0b0000000000000000;
 	for (int pin = 0; pin <= 9; pin++) {
-		if (pin == 1) {
-			counterData << 2;
-		}
 		counterData += digitalRead(dataPins[pin]);
-		counterData << 1;
+		counterData <<= 1;
 	}
 	digitalWrite(counterResetPin, HIGH);
 	delay(2);
