@@ -31,7 +31,7 @@ void loop() {
 	while (millis() < (millisNow + 300)) {
 	}													//Epmty loop for now
 	getCount();
-	Serial.println(counterData);
+	Serial.println(counterData,BIN);
 }
 
 
