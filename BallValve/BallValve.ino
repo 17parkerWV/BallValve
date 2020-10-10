@@ -1,87 +1,111 @@
 //This program is made to control a ball valve using the input from a flow rate sensor to maintain correct... waterness?
-
 #include <SPI.h>
+//To get the shift register to send data. Not actually an enable pin but in this case it essentially is an enable pin
 const int shiftEnablePin = 4;
 
-//for the MOSFET
+//for the MOSFET and to kick the motor if it is at 0
 const int valveGatePin = 8;
+void kick();
 
 //These are for the Counter IC
-const int dataPins[10] = { 2,3,4,5,6,7,8,9,10,11 };
 const int counterResetPin = 9;
 byte counterData;
 void getCount();
+void counterReset();
 
-//goingUp() is the initial boost to kick the valve open, probably can be lowered.
-void goingUp();
 //flipFlop() is just to maintain the state of the valve
 void flipFlop();
-//These two have the valve open slightly or close slightly
-void flipFlipFlop();
-void flipFlopFlop();
-
+//These variables are for the timing of the valve
+unsigned int millisNow;
+int timeValue = 150;
+int targetHall = 25;
+int targetRange[2] = { 23,29 };
+const int deltaX = 150;
+int yn, yn1, yn2, yn3, ynPlus;
+int posLogic = 0;
 
 
 void setup() {
-	for (int pinLoop = 0; pinLoop <= 9; pinLoop++) {
-		pinMode(dataPins[pinLoop], INPUT);
-	}
 	pinMode(shiftEnablePin, OUTPUT);
 	pinMode(counterResetPin, OUTPUT);
 	pinMode(valveGatePin, OUTPUT);
 	digitalWrite(valveGatePin, LOW);
-	digitalWrite(counterResetPin, HIGH);
-	delay(2);
-	digitalWrite(counterResetPin, LOW);
 	digitalWrite(shiftEnablePin, HIGH);
-	goingUp();
 	SPI.begin();
 	Serial.begin(115200);
+	kick();
+	counterReset();
 }
 
 
-int millisNow;
 void loop() {
 	millisNow = millis();
-	while (millis() - 300 < millisNow) {
-		flipFlop();
-	}
 	getCount();
-	Serial.println(counterData,DEC);
+	flipFlop();
+	Serial.println(counterData, DEC);
+
 }
 
+
 void getCount() {
+	posLogic = 0;
 	digitalWrite(shiftEnablePin, LOW);
 	counterData = SPI.transfer(0);
 	digitalWrite(shiftEnablePin, HIGH);
-	digitalWrite(counterResetPin, HIGH);
-	delay(2);
-	digitalWrite(counterResetPin, LOW);
+	yn3 = yn2;
+	yn2 = yn1;
+	yn1 = yn;
+	yn = counterData;
+	ynPlus = (yn + (2 * yn - 4 * yn1 + 3 * yn2 - yn3) / deltaX);
+	//Logic Time
+	//This section needs to be updated to calculate the time range by itself
+	if (ynPlus > targetRange[1]) {
+		posLogic = 3;
+	}
+	else if (ynPlus <= targetRange[1] && ynPlus >= targetHall) {
+		posLogic = 1;
+	}
+	if (ynPlus < targetRange[0]) {
+		posLogic = 4;
+	}
+	else if (ynPlus >= targetRange[0] && ynPlus < targetHall) {
+		posLogic = 2;
+	}
+	switch (posLogic) {
+	case 3:
+		timeValue = 7;
+		break;
+	case 1:
+		timeValue = 14;
+		break;
+	case 4:
+		timeValue = 45;
+		break;
+	case 2:
+		timeValue = 30;
+		break;
+	default:
+		timeValue = 15;
+		break;
+	}
+	counterReset();
 }
 
 void flipFlop() {
 	digitalWrite(valveGatePin, HIGH);
-	delay(80);
+	delay(deltaX);
 	digitalWrite(valveGatePin, LOW);
-	delay(250);
+	delay(deltaX - timeValue);
 }
 
-void flipFlipFlop() {
-	digitalWrite(valveGatePin, HIGH);
-	delay(90);
-	digitalWrite(valveGatePin, LOW);
-	delay(30);
+void counterReset() {
+	digitalWrite(counterResetPin, HIGH);
+	delay(2);
+	digitalWrite(counterResetPin, LOW);
 }
 
-void flipFlopFlop() {
+void kick() {
 	digitalWrite(valveGatePin, HIGH);
-	delay(30);
-	digitalWrite(valveGatePin, LOW);
-	delay(90);
-}
-
-void goingUp() {
-	digitalWrite(valveGatePin, HIGH);
-	delay(3000);
+	delay(150);
 	digitalWrite(valveGatePin, LOW);
 }
