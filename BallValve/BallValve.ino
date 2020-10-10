@@ -1,13 +1,24 @@
 //This program is made to control a ball valve using the input from a flow rate sensor to maintain correct... waterness?
 
-//Gate pin on the FET that controls the ball valve
-const int valveGatePin = 13;
+#include <SPI.h>
+const int shiftEnablePin = 4;
+
+//for the MOSFET
+const int valveGatePin = 8;
 
 //These are for the Counter IC
 const int dataPins[10] = { 2,3,4,5,6,7,8,9,10,11 };
-const int counterResetPin = 12;
-unsigned int counterData;
+const int counterResetPin = 9;
+byte counterData;
 void getCount();
+
+//goingUp() is the initial boost to kick the valve open, probably can be lowered.
+void goingUp();
+//flipFlop() is just to maintain the state of the valve
+void flipFlop();
+//These two have the valve open slightly or close slightly
+void flipFlipFlop();
+void flipFlopFlop();
 
 
 
@@ -15,33 +26,62 @@ void setup() {
 	for (int pinLoop = 0; pinLoop <= 9; pinLoop++) {
 		pinMode(dataPins[pinLoop], INPUT);
 	}
-	pinMode(valveGatePin, OUTPUT);
+	pinMode(shiftEnablePin, OUTPUT);
 	pinMode(counterResetPin, OUTPUT);
+	pinMode(valveGatePin, OUTPUT);
+	digitalWrite(valveGatePin, LOW);
+	digitalWrite(counterResetPin, HIGH);
+	delay(2);
 	digitalWrite(counterResetPin, LOW);
-	counterData = 0b0000000000000000;
-	digitalWrite(valveGatePin, HIGH);
+	digitalWrite(shiftEnablePin, HIGH);
+	goingUp();
+	SPI.begin();
 	Serial.begin(115200);
-	digitalWrite(counterResetPin, LOW);
 }
 
 
 int millisNow;
 void loop() {
 	millisNow = millis();
-	while (millis() < (millisNow + 300)) {
-	}													//Epmty loop for now
+	while (millis() - 300 < millisNow) {
+		flipFlop();
+	}
 	getCount();
-	Serial.println(counterData,BIN);
+	Serial.println(counterData,DEC);
 }
 
-
 void getCount() {
-	counterData = 0b0000000000000000;
-	for (int pin = 0; pin <= 9; pin++) {
-		counterData += digitalRead(dataPins[pin]);
-		counterData <<= 1;
-	}
+	digitalWrite(shiftEnablePin, LOW);
+	counterData = SPI.transfer(0);
+	digitalWrite(shiftEnablePin, HIGH);
 	digitalWrite(counterResetPin, HIGH);
 	delay(2);
 	digitalWrite(counterResetPin, LOW);
+}
+
+void flipFlop() {
+	digitalWrite(valveGatePin, HIGH);
+	delay(80);
+	digitalWrite(valveGatePin, LOW);
+	delay(250);
+}
+
+void flipFlipFlop() {
+	digitalWrite(valveGatePin, HIGH);
+	delay(90);
+	digitalWrite(valveGatePin, LOW);
+	delay(30);
+}
+
+void flipFlopFlop() {
+	digitalWrite(valveGatePin, HIGH);
+	delay(30);
+	digitalWrite(valveGatePin, LOW);
+	delay(90);
+}
+
+void goingUp() {
+	digitalWrite(valveGatePin, HIGH);
+	delay(3000);
+	digitalWrite(valveGatePin, LOW);
 }
