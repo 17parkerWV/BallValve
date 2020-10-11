@@ -18,8 +18,8 @@ void flipFlop();
 //These variables are for the timing of the valve
 unsigned int millisNow;
 int timeValue = 150;
-int targetHall = 25;
-int targetRange[2] = { 23,29 };
+int targetHall = 8;
+int targetRange[2] = { 6,10 };
 const int deltaX = 150;
 int yn, yn1, yn2, yn3, ynPlus;
 int posLogic = 0;
@@ -43,7 +43,6 @@ void loop() {
 	getCount();
 	flipFlop();
 	Serial.println(counterData, DEC);
-
 }
 
 
@@ -73,7 +72,7 @@ void getCount() {
 	}
 	switch (posLogic) {
 	case 3:
-		timeValue = 7;
+		timeValue = 5;
 		break;
 	case 1:
 		timeValue = 14;
@@ -93,7 +92,7 @@ void getCount() {
 
 void flipFlop() {
 	digitalWrite(valveGatePin, HIGH);
-	delay(deltaX);
+	delay(timeValue);
 	digitalWrite(valveGatePin, LOW);
 	delay(deltaX - timeValue);
 }
